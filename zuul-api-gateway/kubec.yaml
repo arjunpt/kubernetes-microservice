@@ -1,0 +1,62 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "zuul-api-gateway"
+  namespace: ms
+  labels:
+    app: "zuul-api-gateway"
+spec:
+  selector:
+    matchLabels:
+      app: "zuul-api-gateway"
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template: #this is where definition of pod will start
+    metadata:
+      labels:
+        app: "zuul-api-gateway"
+    spec:
+      containers:
+      - name: "zuul-api-gateway"
+        image: zuul-api-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          name: "zuul-api-gateway"
+      affinity: #because of the code constrain we are using this. so that the pod will deployed on to the same pod where the react-ui is running
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - react-ui
+            topologyKey: "kubernetes.io/hostname"
+
+
+---
+# https://kubernetes.io/docs/concepts/services-networking/service/
+apiVersion: v1
+kind: Service
+metadata:
+  name: "zuul-service"
+  namespace: ms
+spec:
+  selector:
+    app: "zuul-service"
+  type: NodePort #because of some code constraint we are goign with nodeport otherwise we can use trhe clsuterIP for internal communciation
+  ports:
+  - name: zuul-service
+    port: 9999
+    targetPort: 9999
+    nodePort: 32470 #specifying on which nodeport have to run. This is specifed in the development code of , if we avoid it will randomly took anyport above 32000
+
+---
+
+#deploy it into k8s cluster now
