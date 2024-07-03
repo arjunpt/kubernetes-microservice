@@ -1,0 +1,61 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ms
+  labels:
+    app: "react-ui"
+spec:
+  selector: #whenever i used a service it shoould match this
+    matchLabels:
+      app: "react-ui"
+  replicas: 1
+  strategy: #even if we remove this it will work fine the stratergy is rolling update
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template: #this is where definition of pod will start
+    metadata:
+      labels:
+        app: "react-ui"
+    spec:
+      containers:
+      - name: "react-ui"
+        image: arjunpt/ui
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: "react-ui"
+
+
+---
+# https://kubernetes.io/docs/concepts/services-networking/service/
+apiVersion: v1
+kind: Service
+metadata:
+  name: "react-ui"
+  namespace: ms
+spec:
+  selector:
+    app: "react-ui" #this should match with the match label of deployment file
+  type: NodePort
+  ports:
+  - name: "react-ui"
+    port: 8080
+    targetPort: 8080 #container port
+
+
+---
+
+#kubectl create namespace ms
+#kubect config view - to check the currrent naemspace
+#kubectl config set-context --current --namespace=ms
+#kubectl config view
+
+#kubectl get all
+
+#create a yaml kubectl.yam and paste above contents
+#kubectl get pods -o wise -> to check on what pod the applciation have been deployed
+#kubectl get nodes -o wide  -> using this external IP of the node we can access the applciation along with the port
+#kubectl get service and check the service port and call the applciation on node IP:service port
