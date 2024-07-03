@@ -1,0 +1,48 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "shoe"
+  namespace: ms
+  labels:
+    app: "shoe"
+spec:
+  selector:
+    matchLabels:
+      app: "shoe"
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: "shoe"
+    spec:
+      containers:
+      - name: "shoe"
+        image: shoe:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 1002
+          name: "shoe"
+
+---
+# https://kubernetes.io/docs/concepts/services-networking/service/
+apiVersion: v1
+kind: Service
+metadata:
+  name: shoe
+  namespace: ms
+spec:
+  selector:
+    app: "shoe"
+  type: ClusterIP
+  ports:
+  - name: shoe
+    port: 1002
+    targetPort: 1002
+
+---
